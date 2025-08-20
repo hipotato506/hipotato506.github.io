@@ -103,29 +103,20 @@
 
     const columnHeaders = ["영단어", "한글단어", "영어뜻", "한글뜻", "품사"];
     
+    // ███████████████████  요청에 따라 수정된 부분 시작 ███████████████████
     // ▼▼▼ 여기에 가능한 모든 질문-정답 조합을 정의합니다 ▼▼▼
     const validPairs = [
-        { question: "영어뜻", answer: "영단어" },
-        { question: "한글뜻", answer: "영단어" },
-        { question: "한글단어", answer: "영단어" },
-        
-        { question: "영어뜻", answer: "한글단어" },
-        { question: "한글뜻", answer: "한글단어" },
         { question: "영단어", answer: "한글단어" },
-        
         { question: "영단어", answer: "영어뜻" },
-        { question: "한글단어", answer: "영어뜻" },
-        { question: "한글뜻", answer: "영어뜻" },
-        
         { question: "영단어", answer: "한글뜻" },
-        { question: "한글단어", answer: "한글뜻" },
-        { question: "영어뜻", answer: "한글뜻" },
-
         { question: "영단어", answer: "품사" },
-        { question: "한글단어", answer: "품사" }
+        { question: "한글단어", answer: "영단어" },
+        { question: "영어뜻", answer: "영단어" },
+        { question: "한글뜻", answer: "영단어" }
     ];
+    // ███████████████████  요청에 따라 수정된 부분 종료 ███████████████████
 
-    // ███████████████████  수정된 부분 1 시작 ███████████████████
+
     async function loadAndPrepareData() {
         try {
             const response = await fetch('./quiz.xlsx');
@@ -196,7 +187,6 @@
             answerType: randomPair.answer,
         };
     }
-    // ███████████████████  수정된 부분 1 종료 ███████████████████
 
     async function startGame() {
         playerName = nameInput.value.trim();
@@ -278,4 +268,55 @@
             button.classList.add('incorrect');
             incorrectAnswers.push(currentQuestion);
             const correctButton = Array.from(optionsContainer.children).find(btn => btn.textContent === currentQuestion.answer);
-            if (correctButton) correctButton.classList
+            if (correctButton) correctButton.classList.add('correct');
+        }
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            displayNextQuestion();
+        }, 1500);
+    }
+    
+    function updateProgress() {
+        const progress = ((currentQuestionIndex + 1) / quizLength) * 100;
+        progressText.textContent = `${currentQuestionIndex + 1} / ${quizLength}`;
+        progressBar.style.width = `${progress}%`;
+    }
+
+    function showResults() {
+        quizScreen.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+        
+        resultName.textContent = playerName;
+        scoreText.textContent = `${score} / ${quizLength}`;
+        
+        const now = new Date();
+        const timeString = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}시 ${now.getMinutes()}분`;
+        resultTime.textContent = `퀴즈 완료 시간: ${timeString}`;
+
+        incorrectList.innerHTML = '';
+        if (incorrectAnswers.length === 0) {
+            incorrectList.innerHTML = `<li class="text-green-600 font-semibold">완벽해요! 틀린 문제가 없습니다.</li>`;
+        } else {
+            incorrectAnswers.forEach(q => {
+                const li = document.createElement('li');
+                li.innerHTML = `<b>질문 (${q.questionType}):</b> ${q.question} <br> <b>정답 (${q.answerType}):</b> <span class="font-bold text-green-700">${q.answer}</span>`;
+                li.classList.add('text-gray-600', 'text-sm', 'p-2', 'bg-gray-50', 'rounded-md');
+                incorrectList.appendChild(li);
+            });
+        }
+    }
+
+    function resetGame() {
+        resultsScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+        nameInput.value = '';
+        startBtn.disabled = false;
+        startBtn.textContent = '퀴즈 시작!';
+    }
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', resetGame);
+</script>
+</body>
+</html>
