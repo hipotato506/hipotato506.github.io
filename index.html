@@ -10,12 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ▼▼▼ 수정된 스타일 ▼▼▼ */
+        /* ▼▼▼ 수정된 스타일 (배경 이미지 관련 코드 삭제) ▼▼▼ */
         body {
             font-family: 'Noto Sans KR', sans-serif;
-            background-color: #F5F5DC; /* 이미지 로딩 실패 시 배경색 */
-            background-image: url('bellaT.png');
-            background-repeat: repeat; /* 이미지를 타일처럼 반복 */
+            background-color: #F5F5DC;
         }
         /* ▲▲▲ 수정된 스타일 ▲▲▲ */
 
@@ -37,7 +35,10 @@
     <div id="app-container" class="w-full max-w-2xl mx-auto">
 
         <div id="start-screen" class="p-8 quiz-card">
-            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Bella T - Voca Quiz!</h1>
+            <div class="flex items-center justify-center mb-6">
+                <img src="bellaT.png" alt="Bella T Character" class="h-12 mr-4">
+                <h1 class="text-3xl font-bold text-gray-800">Bella T - Voca Quiz!</h1>
+            </div>
             <div class="space-y-6">
                 <div>
                     <label for="name-input" class="block text-lg font-semibold text-gray-700 mb-2">이름을 입력하세요</label>
@@ -54,6 +55,7 @@
             </div>
             <button id="start-btn" class="w-full mt-8 py-4 px-6 text-xl font-bold rounded-lg btn-primary">퀴즈 시작!</button>
         </div>
+
         <div id="quiz-screen" class="hidden">
             <div class="p-6 sm:p-8 quiz-card">
                 <div class="flex justify-between items-center mb-4">
@@ -83,7 +85,7 @@
             </div>
             <button id="restart-btn" class="w-full md:w-1-2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
         </div>
-        </div>
+    </div>
 
 <script>
     // JavaScript 코드는 변경사항 없습니다. 그대로 사용하시면 됩니다.
@@ -305,5 +307,4 @@
     restartBtn.addEventListener('click', resetGame);
 </script>
 </body>
-
 </html>
