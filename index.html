@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>랜덤 어휘 퀴즈</title>
+    <title>조합형 어휘 퀴즈</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,7 +74,7 @@
                 <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">다시 학습해 보세요!</h3>
                 <ul id="incorrect-list" class="space-y-3 max-h-40 overflow-y-auto pr-2"></ul>
             </div>
-            <button id="restart-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
+            <button id="restart-btn" class="w-full md:w-1-2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
         </div>
     </div>
 
@@ -101,12 +101,29 @@
     let allWordsData = [];
     let currentQuestion, currentQuestionIndex, score, incorrectAnswers, quizLength, playerName;
 
-    const columnMap = {
-        engWord: { name: "영단어", type: "단어" },
-        korWord: { name: "한글단어", type: "단어" },
-        engDef: { name: "영어뜻", type: "설명" },
-        korDef: { name: "한글뜻", type: "설명" }
-    };
+    const columnHeaders = ["영단어", "한글단어", "영어뜻", "한글뜻", "품사"];
+    
+    // ▼▼▼ 여기에 가능한 모든 질문-정답 조합을 정의합니다 ▼▼▼
+    const validPairs = [
+        { question: "영어뜻", answer: "영단어" },
+        { question: "한글뜻", answer: "영단어" },
+        { question: "한글단어", answer: "영단어" },
+        
+        { question: "영어뜻", answer: "한글단어" },
+        { question: "한글뜻", answer: "한글단어" },
+        { question: "영단어", answer: "한글단어" },
+        
+        { question: "영단어", answer: "영어뜻" },
+        { question: "한글단어", answer: "영어뜻" },
+        { question: "한글뜻", answer: "영어뜻" },
+        
+        { question: "영단어", answer: "한글뜻" },
+        { question: "한글단어", answer: "한글뜻" },
+        { question: "영어뜻", answer: "한글뜻" },
+
+        { question: "영단어", answer: "품사" },
+        { question: "한글단어", answer: "품사" }
+    ];
 
     async function loadAndPrepareData() {
         try {
@@ -115,24 +132,23 @@
             const workbook = XLSX.read(arrayBuffer);
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: columnHeaders});
+
+            if (jsonData.length > 0 && columnHeaders.every(h => jsonData[0][h] === h)) {
+                jsonData.shift();
+            }
 
             allWordsData = jsonData.map(row => {
-                const wordData = {
-                    engWord: row[columnMap.engWord.name]?.trim(),
-                    korWord: row[columnMap.korWord.name]?.trim(),
-                    engDef: row[columnMap.engDef.name]?.trim(),
-                    korDef: row[columnMap.korDef.name]?.trim()
-                };
-                // 4개 컬럼 중 하나라도 비어있으면 해당 row는 퀴즈에서 제외
-                if (Object.values(wordData).some(val => !val)) {
-                    return null;
-                }
-                return wordData;
-            }).filter(Boolean); // null인 항목 최종 제외
+                const rowData = {};
+                columnHeaders.forEach(header => {
+                    rowData[header] = row[header]?.trim();
+                });
+                if (Object.values(rowData).some(val => !val)) return null;
+                return rowData;
+            }).filter(Boolean);
 
             if (allWordsData.length < 4) {
-                throw new Error('퀴즈를 만들기에 유효한 단어 데이터(모든 칸이 채워진 행이 4개 이상)가 부족합니다.');
+                throw new Error('퀴즈를 만들기에 유효한 데이터(모든 칸이 채워진 행이 4개 이상)가 부족합니다.');
             }
             return true;
         } catch (error) {
@@ -142,44 +158,24 @@
         }
     }
 
-    function generateRandomQuestion() {
+    function generatePairedQuestion() {
         // 1. 전체 단어 중 랜덤으로 한 행(row)을 선택
-        const randomWordData = allWordsData[Math.floor(Math.random() * allWordsData.length)];
-
-        // 2. 선택된 행에서 '단어' 타입과 '설명' 타입의 컬럼을 분리
-        const wordOptions = [randomWordData.engWord, randomWordData.korWord];
-        const definitionOptions = [randomWordData.engDef, randomWordData.korDef];
-
-        // 3. 질문과 정답을 랜덤으로 결정 (설명 -> 단어 or 단어 -> 설명)
-        const isDefinitionQuestion = Math.random() > 0.5;
-        let questionText, answerText;
-
-        if (isDefinitionQuestion) {
-            questionText = definitionOptions[Math.floor(Math.random() * definitionOptions.length)];
-            answerText = (questionText === randomWordData.engDef || questionText === randomWordData.korDef) ? 
-                         wordOptions[Math.floor(Math.random() * wordOptions.length)] : null;
-        } else {
-            questionText = wordOptions[Math.floor(Math.random() * wordOptions.length)];
-            answerText = (questionText === randomWordData.engWord || questionText === randomWordData.korWord) ? 
-                         definitionOptions[Math.floor(Math.random() * definitionOptions.length)] : null;
-        }
+        const randomRow = allWordsData[Math.floor(Math.random() * allWordsData.length)];
         
-        // 정답의 타입을 찾기 (예: '영단어')
-        const answerKey = Object.keys(randomWordData).find(key => randomWordData[key] === answerText);
+        // 2. 정의된 조합(validPairs) 중 하나를 랜덤으로 선택
+        const randomPair = validPairs[Math.floor(Math.random() * validPairs.length)];
         
         return {
-            question: questionText,
-            answer: answerText,
-            answerKey: answerKey // 'engWord', 'korWord' 등
+            question: randomRow[randomPair.question],
+            answer: randomRow[randomPair.answer],
+            questionType: randomPair.question,
+            answerType: randomPair.answer,
         };
     }
 
     async function startGame() {
         playerName = nameInput.value.trim();
-        if (!playerName) {
-            alert('이름을 입력해주세요!');
-            return;
-        }
+        if (!playerName) { alert('이름을 입력해주세요!'); return; }
         
         quizLength = parseInt(document.querySelector('input[name="quiz-length"]:checked').value);
 
@@ -207,14 +203,13 @@
     function displayNextQuestion() {
         if (currentQuestionIndex < quizLength) {
             updateProgress();
-            currentQuestion = generateRandomQuestion();
+            currentQuestion = generatePairedQuestion();
             
-            questionTitle.textContent = `다음에 해당하는 것은 무엇일까요?`;
+            questionTitle.textContent = `[${currentQuestion.questionType}]에 해당하는 [${currentQuestion.answerType}]은(는)?`;
             questionEl.textContent = currentQuestion.question;
 
             const options = getOptions(currentQuestion);
             optionsContainer.innerHTML = '';
-
             options.forEach(optionText => {
                 const button = document.createElement('button');
                 button.textContent = optionText;
@@ -229,10 +224,9 @@
     
     function getOptions(currentQuestion) {
         const options = [currentQuestion.answer];
-        // 정답과 타입이 같은 다른 단어들 중에서 오답 선택지를 만듦
         const distractors = allWordsData
-            .map(data => data[currentQuestion.answerKey])
-            .filter(word => word && word !== currentQuestion.answer);
+            .map(row => row[currentQuestion.answerType])
+            .filter(value => value && value !== currentQuestion.answer);
 
         const shuffledDistractors = [...new Set(distractors)].sort(() => 0.5 - Math.random());
         
@@ -286,7 +280,7 @@
         } else {
             incorrectAnswers.forEach(q => {
                 const li = document.createElement('li');
-                li.innerHTML = `<b>질문:</b> ${q.question} <br> <b>정답:</b> <span class="font-bold text-green-700">${q.answer}</span>`;
+                li.innerHTML = `<b>질문 (${q.questionType}):</b> ${q.question} <br> <b>정답 (${q.answerType}):</b> <span class="font-bold text-green-700">${q.answer}</span>`;
                 li.classList.add('text-gray-600', 'text-sm', 'p-2', 'bg-gray-50', 'rounded-md');
                 incorrectList.appendChild(li);
             });
