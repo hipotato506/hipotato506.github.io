@@ -22,31 +22,57 @@
         .progress-bar-inner { transition: width 0.5s ease-in-out; }
         .setup-label { cursor: pointer; border: 2px solid #ddd; border-radius: 0.5rem; padding: 0.5rem 1rem; transition: all 0.2s; }
         .setup-label:has(input:checked) { background-color: #6B8E23; color: white; border-color: #556B2F; font-weight: 500;}
+
+        /* ▼▼▼ 추가된 스타일 ▼▼▼ */
+        .pattern-bg {
+            position: relative;
+            overflow: hidden; /* 둥근 모서리 밖으로 배경이 나가지 않도록 설정 */
+        }
+        .pattern-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: url('bellaT.png');
+            background-repeat: repeat;
+            background-size: 100px; /* 이미지 타일 크기 조절 */
+            transform: rotate(-25deg); /* 대각선 효과 */
+            opacity: 0.08; /* 배경 투명도 조절 */
+            z-index: 0;
+        }
+        .pattern-bg > .content-wrapper {
+            position: relative;
+            z-index: 1; /* 콘텐츠가 배경 위에 오도록 설정 */
+        }
+        /* ▲▲▲ 추가된 스타일 ▲▲▲ */
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <div id="app-container" class="w-full max-w-2xl mx-auto">
 
-        <div id="start-screen" class="p-8 quiz-card">
-            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Voca Quiz (Bella T)</h1>
-            <div class="space-y-6">
-                <div>
-                    <label for="name-input" class="block text-lg font-semibold text-gray-700 mb-2">이름을 입력하세요</label>
-                    <input type="text" id="name-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6B8E23]" placeholder="이름">
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-700 mb-3">문제 개수를 선택하세요</h3>
-                    <div class="flex justify-center space-x-4">
-                        <label class="setup-label"><input type="radio" name="quiz-length" value="20" class="sr-only"> 20</label>
-                        <label class="setup-label"><input type="radio" name="quiz-length" value="30" class="sr-only" checked> 30</label>
-                        <label class="setup-label"><input type="radio" name="quiz-length" value="50" class="sr-only"> 50</label>
+        <div id="start-screen" class="p-8 quiz-card pattern-bg">
+            <div class="content-wrapper">
+                <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Voca Quiz (Bella T)</h1>
+                <div class="space-y-6">
+                    <div>
+                        <label for="name-input" class="block text-lg font-semibold text-gray-700 mb-2">이름을 입력하세요</label>
+                        <input type="text" id="name-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6B8E23]" placeholder="이름">
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-3">문제 개수를 선택하세요</h3>
+                        <div class="flex justify-center space-x-4">
+                            <label class="setup-label"><input type="radio" name="quiz-length" value="20" class="sr-only"> 20</label>
+                            <label class="setup-label"><input type="radio" name="quiz-length" value="30" class="sr-only" checked> 30</label>
+                            <label class="setup-label"><input type="radio" name="quiz-length" value="50" class="sr-only"> 50</label>
+                        </div>
                     </div>
                 </div>
+                <button id="start-btn" class="w-full mt-8 py-4 px-6 text-xl font-bold rounded-lg btn-primary">퀴즈 시작!</button>
             </div>
-            <button id="start-btn" class="w-full mt-8 py-4 px-6 text-xl font-bold rounded-lg btn-primary">퀴즈 시작!</button>
         </div>
-
         <div id="quiz-screen" class="hidden">
             <div class="p-6 sm:p-8 quiz-card">
                 <div class="flex justify-between items-center mb-4">
@@ -64,21 +90,24 @@
             </div>
         </div>
 
-        <div id="results-screen" class="hidden text-center p-8 quiz-card">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">🎉 퀴즈 결과 🎉</h1>
-            <p class="text-2xl text-gray-600 mb-2"><span id="result-name" class="font-bold text-[#556B2F]"></span>님의 점수는?</p>
-            <p class="text-5xl font-bold text-[#6B8E23] my-4" id="score-text">0 / 0</p>
-            <p class="text-sm text-gray-500 mb-6" id="result-time"></p>
-            
-            <div id="incorrect-answers-container" class="text-left mb-8">
-                <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">본 화면을 캡쳐해서 선생님께 보내주세요!</h3>
-                <ul id="incorrect-list" class="space-y-3 max-h-40 overflow-y-auto pr-2"></ul>
+        <div id="results-screen" class="hidden text-center p-8 quiz-card pattern-bg">
+            <div class="content-wrapper">
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">🎉 퀴즈 결과 🎉</h1>
+                <p class="text-2xl text-gray-600 mb-2"><span id="result-name" class="font-bold text-[#556B2F]"></span>님의 점수는?</p>
+                <p class="text-5xl font-bold text-[#6B8E23] my-4" id="score-text">0 / 0</p>
+                <p class="text-sm text-gray-500 mb-6" id="result-time"></p>
+                
+                <div id="incorrect-answers-container" class="text-left mb-8">
+                    <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">본 화면을 캡쳐해서 선생님께 보내주세요!</h3>
+                    <ul id="incorrect-list" class="space-y-3 max-h-40 overflow-y-auto pr-2"></ul>
+                </div>
+                <button id="restart-btn" class="w-full md:w-1-2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
             </div>
-            <button id="restart-btn" class="w-full md:w-1-2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
         </div>
-    </div>
+        </div>
 
 <script>
+    // JavaScript 코드는 변경사항 없습니다. 그대로 사용하시면 됩니다.
     const startScreen = document.getElementById('start-screen');
     const quizScreen = document.getElementById('quiz-screen');
     const resultsScreen = document.getElementById('results-screen');
