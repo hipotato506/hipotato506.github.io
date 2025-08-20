@@ -10,7 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #F5F5DC; }
+        /* ▼▼▼ 수정된 스타일 ▼▼▼ */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #F5F5DC; /* 이미지 로딩 실패 시 배경색 */
+            background-image: url('bellaT.png');
+            background-repeat: repeat; /* 이미지를 타일처럼 반복 */
+            background-size: 150px; /* 이미지 타일 크기 조절 */
+        }
+        /* ▲▲▲ 수정된 스타일 ▲▲▲ */
+
         .quiz-card { background-color: #FFFFFF; border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
         .btn-primary { background-color: #6B8E23; color: white; transition: background-color 0.3s; }
         .btn-primary:hover { background-color: #556B2F; }
@@ -22,56 +31,29 @@
         .progress-bar-inner { transition: width 0.5s ease-in-out; }
         .setup-label { cursor: pointer; border: 2px solid #ddd; border-radius: 0.5rem; padding: 0.5rem 1rem; transition: all 0.2s; }
         .setup-label:has(input:checked) { background-color: #6B8E23; color: white; border-color: #556B2F; font-weight: 500;}
-
-        /* ▼▼▼ 추가된 스타일 ▼▼▼ */
-        .pattern-bg {
-            position: relative;
-            overflow: hidden; /* 둥근 모서리 밖으로 배경이 나가지 않도록 설정 */
-        }
-        .pattern-bg::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background-image: url('bellaT.png');
-            background-repeat: repeat;
-            background-size: 100px; /* 이미지 타일 크기 조절 */
-            transform: rotate(-25deg); /* 대각선 효과 */
-            opacity: 0.08; /* 배경 투명도 조절 */
-            z-index: 0;
-        }
-        .pattern-bg > .content-wrapper {
-            position: relative;
-            z-index: 1; /* 콘텐츠가 배경 위에 오도록 설정 */
-        }
-        /* ▲▲▲ 추가된 스타일 ▲▲▲ */
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <div id="app-container" class="w-full max-w-2xl mx-auto">
 
-        <div id="start-screen" class="p-8 quiz-card pattern-bg">
-            <div class="content-wrapper">
-                <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Bella T - Voca Quiz!</h1>
-                <div class="space-y-6">
-                    <div>
-                        <label for="name-input" class="block text-lg font-semibold text-gray-700 mb-2">이름을 입력하세요</label>
-                        <input type="text" id="name-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6B8E23]" placeholder="이름">
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-700 mb-3">문제 개수를 선택하세요</h3>
-                        <div class="flex justify-center space-x-4">
-                            <label class="setup-label"><input type="radio" name="quiz-length" value="20" class="sr-only"> 20</label>
-                            <label class="setup-label"><input type="radio" name="quiz-length" value="30" class="sr-only" checked> 30</label>
-                            <label class="setup-label"><input type="radio" name="quiz-length" value="50" class="sr-only"> 50</label>
-                        </div>
+        <div id="start-screen" class="p-8 quiz-card">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Bella T - Voca Quiz!</h1>
+            <div class="space-y-6">
+                <div>
+                    <label for="name-input" class="block text-lg font-semibold text-gray-700 mb-2">이름을 입력하세요</label>
+                    <input type="text" id="name-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6B8E23]" placeholder="이름">
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">문제 개수를 선택하세요</h3>
+                    <div class="flex justify-center space-x-4">
+                        <label class="setup-label"><input type="radio" name="quiz-length" value="20" class="sr-only"> 20</label>
+                        <label class="setup-label"><input type="radio" name="quiz-length" value="30" class="sr-only" checked> 30</label>
+                        <label class="setup-label"><input type="radio" name="quiz-length" value="50" class="sr-only"> 50</label>
                     </div>
                 </div>
-                <button id="start-btn" class="w-full mt-8 py-4 px-6 text-xl font-bold rounded-lg btn-primary">퀴즈 시작!</button>
             </div>
+            <button id="start-btn" class="w-full mt-8 py-4 px-6 text-xl font-bold rounded-lg btn-primary">퀴즈 시작!</button>
         </div>
         <div id="quiz-screen" class="hidden">
             <div class="p-6 sm:p-8 quiz-card">
@@ -90,19 +72,17 @@
             </div>
         </div>
 
-        <div id="results-screen" class="hidden text-center p-8 quiz-card pattern-bg">
-            <div class="content-wrapper">
-                <h1 class="text-4xl font-bold text-gray-800 mb-2">🎉 퀴즈 결과 🎉</h1>
-                <p class="text-2xl text-gray-600 mb-2"><span id="result-name" class="font-bold text-[#556B2F]"></span>님의 점수는?</p>
-                <p class="text-5xl font-bold text-[#6B8E23] my-4" id="score-text">0 / 0</p>
-                <p class="text-sm text-gray-500 mb-6" id="result-time"></p>
-                
-                <div id="incorrect-answers-container" class="text-left mb-8">
-                    <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">본 화면을 캡쳐해서 선생님께 보내주세요!</h3>
-                    <ul id="incorrect-list" class="space-y-3 max-h-40 overflow-y-auto pr-2"></ul>
-                </div>
-                <button id="restart-btn" class="w-full md:w-1-2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
+        <div id="results-screen" class="hidden text-center p-8 quiz-card">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🎉 퀴즈 결과 🎉</h1>
+            <p class="text-2xl text-gray-600 mb-2"><span id="result-name" class="font-bold text-[#556B2F]"></span>님의 점수는?</p>
+            <p class="text-5xl font-bold text-[#6B8E23] my-4" id="score-text">0 / 0</p>
+            <p class="text-sm text-gray-500 mb-6" id="result-time"></p>
+            
+            <div id="incorrect-answers-container" class="text-left mb-8">
+                <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">본 화면을 캡쳐해서 선생님께 보내주세요!</h3>
+                <ul id="incorrect-list" class="space-y-3 max-h-40 overflow-y-auto pr-2"></ul>
             </div>
+            <button id="restart-btn" class="w-full md:w-1-2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
         </div>
         </div>
 
@@ -132,19 +112,13 @@
 
     const columnHeaders = ["영단어", "한글단어", "영어뜻", "한글뜻", "품사"];
     
-    // ███████████████████  요청에 따라 수정된 부분 시작 ███████████████████
-    // ▼▼▼ 여기에 가능한 모든 질문-정답 조합을 정의합니다 ▼▼▼
     const validPairs = [
         { question: "영단어", answer: "한글단어" },
         { question: "영단어", answer: "영어뜻" },
-        // { question: "영단어", answer: "한글뜻" },
         { question: "영단어", answer: "품사" },
         { question: "한글단어", answer: "영단어" },
         { question: "영어뜻", answer: "영단어" },
-        // { question: "한글뜻", answer: "영단어" }
     ];
-    // ███████████████████  요청에 따라 수정된 부분 종료 ███████████████████
-
 
     async function loadAndPrepareData() {
         try {
@@ -169,12 +143,11 @@
                         filledCount++;
                     }
                 });
-                // 2개 이상의 열이 채워져 있으면 유효한 데이터로 간주
                 if (filledCount >= 2) {
                     return rowData;
                 }
                 return null;
-            }).filter(Boolean); // null인 (유효하지 않은) 행을 제거
+            }).filter(Boolean);
 
             if (allWordsData.length < 4) {
                 throw new Error('퀴즈를 만들기에 유효한 데이터(최소 2개 이상의 열이 채워진 행이 4개 이상)가 부족합니다.');
@@ -189,26 +162,16 @@
 
     function generatePairedQuestion() {
         let randomRow, availablePairs;
-
-        // 사용 가능한 질문-정답 쌍이 있는 행을 찾을 때까지 반복
         do {
-            // 1. 전체 데이터 중 랜덤으로 한 행(row)을 선택
             randomRow = allWordsData[Math.floor(Math.random() * allWordsData.length)];
-            
-            // 2. 선택된 행에서 데이터가 채워진 열(컬럼)들의 목록을 생성
             const availableColumns = columnHeaders.filter(header => randomRow[header]);
-            
-            // 3. 전체 조합(validPairs) 중에서, 현재 행에서 사용 가능한 조합만 필터링
             availablePairs = validPairs.filter(pair => 
                 availableColumns.includes(pair.question) && availableColumns.includes(pair.answer)
             );
+        } while (availablePairs.length === 0);
 
-        } while (availablePairs.length === 0); // 만약 유효한 조합이 없으면 다른 행을 다시 뽑음
-
-        // 4. 사용 가능한 조합 중 하나를 랜덤으로 선택
         const randomPair = availablePairs[Math.floor(Math.random() * availablePairs.length)];
         
-        // 5. 최종 질문 객체 생성
         return {
             question: randomRow[randomPair.question],
             answer: randomRow[randomPair.answer],
@@ -268,22 +231,17 @@
     
     function getOptions(currentQuestion) {
         const options = [currentQuestion.answer];
-        // 오답 선택지: 정답과 유형은 같지만 값은 다른 데이터들
         const distractors = allWordsData
             .map(row => row[currentQuestion.answerType])
-            // 값이 존재하고(undefined가 아니고) 정답과 다른 경우만 필터링
             .filter(value => value && value !== currentQuestion.answer);
 
-        // 중복 제거 후 무작위로 섞기
         const shuffledDistractors = [...new Set(distractors)].sort(() => 0.5 - Math.random());
         
-        // 필요한 오답 개수(최대 3개)만큼 선택
         const requiredOptions = Math.min(3, shuffledDistractors.length);
         for (let i = 0; i < requiredOptions; i++) {
             options.push(shuffledDistractors[i]);
         }
         
-        // 정답 포함 최종 선택지들을 다시 무작위로 섞기
         return [...options].sort(() => 0.5 - Math.random());
     }
 
@@ -348,5 +306,4 @@
     restartBtn.addEventListener('click', resetGame);
 </script>
 </body>
-
 </html>
