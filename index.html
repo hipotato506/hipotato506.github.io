@@ -3,72 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>엑셀 연동 어휘 퀴즈</title>
+    <title>동적 어휘 퀴즈 생성기</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
     <style>
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #F5F5DC; /* Calm Beige */
-        }
-        .quiz-card {
-            background-color: #FFFFFF;
-            border-radius: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease-in-out;
-        }
-        .btn-primary {
-            background-color: #6B8E23; /* Sage Green */
-            color: white;
-            transition: background-color 0.3s;
-        }
-        .btn-primary:hover {
-            background-color: #556B2F; /* Darker Sage */
-        }
-        .btn-primary:disabled {
-            background-color: #909d7a;
-            cursor: not-allowed;
-        }
-        .btn-option {
-            background-color: #F0EAD6; /* Light Beige */
-            border: 2px solid #D2B48C; /* Tan */
-            color: #333;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-option:hover {
-            background-color: #D2B48C;
-            color: white;
-        }
-        .btn-option.correct {
-            background-color: #22C55E; /* Green 500 */
-            border-color: #16A34A; /* Green 600 */
-            color: white;
-        }
-        .btn-option.incorrect {
-            background-color: #EF4444; /* Red 500 */
-            border-color: #DC2626; /* Red 600 */
-            color: white;
-        }
-        .progress-bar-inner {
-            transition: width 0.5s ease-in-out;
-        }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #F5F5DC; }
+        .quiz-card { background-color: #FFFFFF; border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+        .btn-primary { background-color: #6B8E23; color: white; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: #556B2F; }
+        .btn-primary:disabled { background-color: #909d7a; cursor: not-allowed; }
+        .btn-option { background-color: #F0EAD6; border: 2px solid #D2B48C; color: #333; transition: all 0.2s ease-in-out; }
+        .btn-option:hover { background-color: #D2B48C; color: white; }
+        .btn-option.correct { background-color: #22C55E; border-color: #16A34A; color: white; }
+        .btn-option.incorrect { background-color: #EF4444; border-color: #DC2626; color: white; }
+        .progress-bar-inner { transition: width 0.5s ease-in-out; }
+        .setup-label { cursor: pointer; border: 2px solid #ddd; border-radius: 0.5rem; padding: 0.75rem; transition: all 0.2s; }
+        .setup-label:has(input:checked) { background-color: #6B8E23; color: white; border-color: #556B2F; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <div id="app-container" class="w-full max-w-2xl mx-auto">
-
         <div id="start-screen" class="text-center p-8 quiz-card">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">어휘력 퀴즈 챌린지</h1>
-            <p class="text-lg text-gray-600 mb-8">엑셀 파일의 단어들을 퀴즈로 확인해 보세요. 준비가 되면 시작 버튼을 눌러주세요!</p>
-            <button id="start-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">
-                퀴즈 시작하기
-            </button>
+            <p class="text-lg text-gray-600 mb-8">레포지토리의 `quiz.xlsx` 파일로<br>어떤 단어 퀴즈든 만들 수 있어요!</p>
+            <button id="start-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">퀴즈 시작하기</button>
+        </div>
+
+        <div id="setup-screen" class="hidden p-8 quiz-card">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">퀴즈 설정하기</h2>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">1. 정답(단어)으로 사용할 컬럼을 선택하세요:</h3>
+                    <div id="answer-column-options" class="space-y-2"></div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">2. 문제(설명)로 사용할 컬럼을 모두 선택하세요:</h3>
+                    <div id="question-column-options" class="space-y-2"></div>
+                </div>
+            </div>
+            <button id="create-quiz-btn" class="w-full mt-8 py-3 px-6 text-lg font-bold rounded-lg btn-primary">퀴즈 생성!</button>
         </div>
 
         <div id="quiz-screen" class="hidden">
@@ -80,218 +57,239 @@
                 <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
                     <div id="progress-bar" class="bg-[#6B8E23] h-2.5 rounded-full progress-bar-inner" style="width: 10%"></div>
                 </div>
-
                 <div class="text-center mb-8">
-                    <p class="text-lg text-gray-600 mb-2">다음 설명에 해당하는 영어 단어는 무엇일까요?</p>
-                    <h2 id="question" class="text-2xl sm:text-3xl font-bold text-gray-800 h-24 flex items-center justify-center">Question text goes here</h2>
+                    <p id="question-title" class="text-lg text-gray-600 mb-2">다음 설명에 해당하는 단어는?</p>
+                    <h2 id="question" class="text-2xl sm:text-3xl font-bold text-gray-800 h-24 flex items-center justify-center">Question text</h2>
                 </div>
-
-                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    </div>
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
         </div>
 
         <div id="results-screen" class="hidden text-center p-8 quiz-card">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">퀴즈 결과</h1>
             <p class="text-2xl text-gray-600 mb-6">총 <span id="score" class="font-bold text-[#6B8E23]">0</span>점을 획득했습니다!</p>
-            
             <div id="incorrect-answers-container" class="text-left mb-8">
                 <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">다시 학습해 보세요!</h3>
-                <ul id="incorrect-list" class="space-y-3">
-                    </ul>
+                <ul id="incorrect-list" class="space-y-3"></ul>
             </div>
-
-            <button id="restart-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">
-                다시 풀어보기
-            </button>
+            <button id="restart-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">처음으로</button>
         </div>
     </div>
 
-    <script>
-        const startScreen = document.getElementById('start-screen');
-        const quizScreen = document.getElementById('quiz-screen');
-        const resultsScreen = document.getElementById('results-screen');
-        
-        const startBtn = document.getElementById('start-btn');
-        const restartBtn = document.getElementById('restart-btn');
+<script>
+    const startScreen = document.getElementById('start-screen');
+    const setupScreen = document.getElementById('setup-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    
+    const startBtn = document.getElementById('start-btn');
+    const createQuizBtn = document.getElementById('create-quiz-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    
+    const answerColumnOptions = document.getElementById('answer-column-options');
+    const questionColumnOptions = document.getElementById('question-column-options');
 
-        const questionEl = document.getElementById('question');
-        const optionsContainer = document.getElementById('options-container');
-        const progressText = document.getElementById('progress-text');
-        const progressBar = document.getElementById('progress-bar');
-        const scoreEl = document.getElementById('score');
-        const incorrectList = document.getElementById('incorrect-list');
+    const questionTitle = document.getElementById('question-title');
+    const questionEl = document.getElementById('question');
+    const optionsContainer = document.getElementById('options-container');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const scoreEl = document.getElementById('score');
+    const incorrectList = document.getElementById('incorrect-list');
 
-        let allWords = []; // 엑셀에서 불러온 모든 단어를 저장할 배열
-        let shuffledWords, currentWordIndex, score, incorrectAnswers;
-        const QUIZ_LENGTH = 10;
+    let rawData = [];
+    let headers = [];
+    let allWords = [];
+    let shuffledWords, currentWordIndex, score, incorrectAnswers;
+    const QUIZ_LENGTH = 10;
 
-        // 2. 엑셀 파일을 로드하고 파싱하는 함수
-        async function loadQuizData() {
-            try {
-                // './quiz.xlsx'는 이 HTML 파일과 동일한 위치에 파일이 있다는 의미입니다.
-                // 만약 /data/quiz.xlsx 처럼 다른 폴더에 있다면 경로를 수정해주세요.
-                const response = await fetch('./quiz.xlsx');
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(arrayBuffer);
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    async function loadExcelAndShowSetup() {
+        startBtn.disabled = true;
+        startBtn.textContent = '파일 읽는 중...';
+        try {
+            const response = await fetch('./quiz.xlsx');
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                // 컬럼 이름이 유동적일 수 있으므로, 첫 번째 데이터의 키(key)들을 기반으로 매핑합니다.
-                if (jsonData.length === 0) {
-                    throw new Error('엑셀 파일에 데이터가 없습니다.');
-                }
-                const headers = Object.keys(jsonData[0]); // ["단어 (Word)", "영영풀이...", "뜻..."]
-                
-                // 데이터 형식을 { word, definition, meaning } 으로 통일합니다.
-                allWords = jsonData.map(row => ({
-                    word: row[headers[0]],       // 첫 번째 열을 단어로 가정
-                    definition: row[headers[2]], // 세 번째 열을 영영풀이로 가정
-                    meaning: row[headers[3]]     // 네 번째 열을 한글 뜻으로 가정
-                }));
-
-                return true; // 성공적으로 로드됨
-            } catch (error) {
-                console.error('퀴즈 데이터를 불러오는 데 실패했습니다:', error);
-                alert('quiz.xlsx 파일을 불러올 수 없습니다. 파일이 올바른 위치에 있는지 확인해주세요.');
-                return false; // 로드 실패
-            }
-        }
-
-        function shuffleArray(array) {
-            return array.sort(() => Math.random() - 0.5);
-        }
-
-        async function startGame() {
-            startBtn.disabled = true;
-            startBtn.textContent = '데이터 로딩 중...';
+            if (rawData.length < 2) throw new Error('엑셀 파일에 헤더와 데이터가 모두 필요합니다.');
             
-            const isDataLoaded = await loadQuizData();
-            if (!isDataLoaded) {
-                startBtn.disabled = false;
-                startBtn.textContent = '퀴즈 시작하기';
-                return; // 데이터 로드 실패 시 게임 시작 안함
-            }
+            headers = rawData[0];
+            rawData = XLSX.utils.sheet_to_json(worksheet); // 객체 배열로 다시 파싱
 
+            displaySetupOptions();
             startScreen.classList.add('hidden');
-            resultsScreen.classList.add('hidden');
-            quizScreen.classList.remove('hidden');
+            setupScreen.classList.remove('hidden');
 
-            // 퀴즈 단어 수가 10개 미만일 경우를 대비
-            const quizSetLength = Math.min(QUIZ_LENGTH, allWords.length);
-            shuffledWords = shuffleArray([...allWords]).slice(0, quizSetLength);
-            currentWordIndex = 0;
-            score = 0;
-            incorrectAnswers = [];
-            
-            displayNextQuestion();
-        }
-
-        function displayNextQuestion() {
-            const quizSetLength = shuffledWords.length;
-            if (currentWordIndex < quizSetLength) {
-                updateProgress();
-                const currentWord = shuffledWords[currentWordIndex];
-                
-                // 질문이 될 내용(영영풀이, 한글뜻)이 비어있지 않은지 확인
-                const questionText = currentWord.definition || currentWord.meaning;
-                questionEl.textContent = questionText || "정의 없음"; // 둘 다 비어있을 경우 대비
-
-                const options = getOptions(currentWord);
-                optionsContainer.innerHTML = '';
-
-                options.forEach(option => {
-                    const button = document.createElement('button');
-                    button.textContent = option.word;
-                    button.classList.add('w-full', 'p-4', 'text-lg', 'font-semibold', 'rounded-lg', 'btn-option');
-                    button.onclick = () => selectAnswer(button, option.correct);
-                    optionsContainer.appendChild(button);
-                });
-            } else {
-                showResults();
-            }
-        }
-        
-        function getOptions(correctWord) {
-            const options = [{ word: correctWord.word, correct: true }];
-            const distractors = allWords.filter(w => w.word !== correctWord.word);
-            const shuffledDistractors = shuffleArray(distractors);
-
-            // 보기 3개를 추가. 전체 단어 수가 4개 미만일 경우를 대비
-            const count = Math.min(3, shuffledDistractors.length);
-            for (let i = 0; i < count; i++) {
-                options.push({ word: shuffledDistractors[i].word, correct: false });
-            }
-            
-            return shuffleArray(options);
-        }
-
-        function selectAnswer(button, isCorrect) {
-            Array.from(optionsContainer.children).forEach(btn => {
-                btn.disabled = true;
-            });
-
-            if (isCorrect) {
-                score++;
-                button.classList.add('correct');
-            } else {
-                button.classList.add('incorrect');
-                incorrectAnswers.push(shuffledWords[currentWordIndex]);
-                const correctButton = Array.from(optionsContainer.children).find(btn => {
-                    const correctWord = shuffledWords[currentWordIndex].word;
-                    return btn.textContent === correctWord;
-                });
-                if (correctButton) {
-                    correctButton.classList.add('correct');
-                }
-            }
-
-            setTimeout(() => {
-                currentWordIndex++;
-                displayNextQuestion();
-            }, 1500);
-        }
-        
-        function updateProgress() {
-            const quizSetLength = shuffledWords.length;
-            const progress = ((currentWordIndex + 1) / quizSetLength) * 100;
-            progressText.textContent = `${currentWordIndex + 1} / ${quizSetLength}`;
-            progressBar.style.width = `${progress}%`;
-        }
-
-        function showResults() {
-            quizScreen.classList.add('hidden');
-            resultsScreen.classList.remove('hidden');
-            
-            const quizSetLength = shuffledWords.length;
-            scoreEl.textContent = `${score} / ${quizSetLength}`;
-            incorrectList.innerHTML = '';
-
-            if (incorrectAnswers.length === 0) {
-                const li = document.createElement('li');
-                li.textContent = '🎉 완벽해요! 틀린 문제가 없습니다.';
-                li.classList.add('text-green-600', 'font-semibold');
-                incorrectList.appendChild(li);
-            } else {
-                incorrectAnswers.forEach(word => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<span class="font-bold text-gray-800">${word.word}</span>: ${word.meaning || word.definition}`;
-                    li.classList.add('text-gray-600');
-                    incorrectList.appendChild(li);
-                });
-            }
-        }
-
-        startBtn.addEventListener('click', startGame);
-        restartBtn.addEventListener('click', () => {
-             // Reset start button state for next game
+        } catch (error) {
+            console.error('퀴즈 데이터를 불러오는 데 실패했습니다:', error);
+            alert('quiz.xlsx 파일을 불러올 수 없습니다. 파일이 올바른 위치에 있는지, 데이터가 올바르게 들어있는지 확인해주세요.');
             startBtn.disabled = false;
             startBtn.textContent = '퀴즈 시작하기';
-            resultsScreen.classList.add('hidden');
-            startScreen.classList.remove('hidden');
-        });
+        }
+    }
 
-    </script>
+    function displaySetupOptions() {
+        answerColumnOptions.innerHTML = '';
+        questionColumnOptions.innerHTML = '';
+
+        headers.forEach((header, index) => {
+            // 정답 컬럼 선택 (라디오 버튼)
+            answerColumnOptions.innerHTML += `
+                <label class="setup-label flex items-center space-x-3">
+                    <input type="radio" name="answer-column" value="${header}" class="form-radio h-5 w-5 text-green-600" ${index === 0 ? 'checked' : ''}>
+                    <span class="font-medium">${header}</span>
+                </label>
+            `;
+            // 문제 컬럼 선택 (체크박스)
+            questionColumnOptions.innerHTML += `
+                <label class="setup-label flex items-center space-x-3">
+                    <input type="checkbox" name="question-column" value="${header}" class="form-checkbox h-5 w-5 text-green-600" ${index > 0 ? 'checked' : ''}>
+                    <span class="font-medium">${header}</span>
+                </label>
+            `;
+        });
+    }
+    
+    function setupQuizAndStart() {
+        const selectedAnswerHeader = document.querySelector('input[name="answer-column"]:checked').value;
+        const selectedQuestionHeaders = Array.from(document.querySelectorAll('input[name="question-column"]:checked')).map(cb => cb.value);
+
+        if (!selectedAnswerHeader || selectedQuestionHeaders.length === 0) {
+            alert('정답과 문제로 사용할 컬럼을 각각 하나 이상 선택해야 합니다.');
+            return;
+        }
+
+        allWords = rawData.map(row => {
+            const word = row[selectedAnswerHeader];
+            const definitions = selectedQuestionHeaders.map(header => ({
+                type: header, // '영영풀이', '한글 뜻' 등
+                text: row[header]
+            })).filter(d => d.text); // 내용이 없는 항목은 제외
+
+            if (!word || definitions.length === 0) return null;
+            return { word, definitions };
+        }).filter(Boolean); // null인 항목 최종 제외
+        
+        if (allWords.length < 4) {
+             alert('퀴즈를 생성하기에 데이터가 부족합니다. 최소 4개 이상의 유효한 단어 데이터가 필요합니다.');
+             return;
+        }
+
+        startGame();
+    }
+
+    function startGame() {
+        setupScreen.classList.add('hidden');
+        resultsScreen.classList.add('hidden');
+        quizScreen.classList.remove('hidden');
+
+        const quizSetLength = Math.min(QUIZ_LENGTH, allWords.length);
+        shuffledWords = [...allWords].sort(() => Math.random() - 0.5).slice(0, quizSetLength);
+        currentWordIndex = 0;
+        score = 0;
+        incorrectAnswers = [];
+        
+        displayNextQuestion();
+    }
+
+    function displayNextQuestion() {
+        const quizSetLength = shuffledWords.length;
+        if (currentWordIndex < quizSetLength) {
+            updateProgress();
+            const currentWord = shuffledWords[currentWordIndex];
+            
+            // 문제로 선택된 정의들 중 하나를 랜덤으로 선택
+            const randomDefinition = currentWord.definitions[Math.floor(Math.random() * currentWord.definitions.length)];
+            
+            questionTitle.textContent = `[${randomDefinition.type}] 다음 설명에 해당하는 단어는?`;
+            questionEl.textContent = randomDefinition.text;
+
+            const options = getOptions(currentWord);
+            optionsContainer.innerHTML = '';
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option.word;
+                button.classList.add('w-full', 'p-4', 'text-lg', 'font-semibold', 'rounded-lg', 'btn-option');
+                button.onclick = () => selectAnswer(button, option.correct);
+                optionsContainer.appendChild(button);
+            });
+        } else {
+            showResults();
+        }
+    }
+    
+    function getOptions(correctWord) {
+        const options = [{ word: correctWord.word, correct: true }];
+        const distractors = allWords.filter(w => w.word !== correctWord.word);
+        const shuffledDistractors = [...distractors].sort(() => Math.random() - 0.5);
+
+        const count = Math.min(3, shuffledDistractors.length);
+        for (let i = 0; i < count; i++) {
+            options.push({ word: shuffledDistractors[i].word, correct: false });
+        }
+        
+        return [...options].sort(() => Math.random() - 0.5);
+    }
+
+    function selectAnswer(button, isCorrect) {
+        Array.from(optionsContainer.children).forEach(btn => { btn.disabled = true; });
+
+        if (isCorrect) {
+            score++;
+            button.classList.add('correct');
+        } else {
+            button.classList.add('incorrect');
+            incorrectAnswers.push(shuffledWords[currentWordIndex]);
+            const correctButton = Array.from(optionsContainer.children).find(btn => btn.textContent === shuffledWords[currentWordIndex].word);
+            if (correctButton) correctButton.classList.add('correct');
+        }
+
+        setTimeout(() => {
+            currentWordIndex++;
+            displayNextQuestion();
+        }, 1500);
+    }
+    
+    function updateProgress() {
+        const quizSetLength = shuffledWords.length;
+        const progress = ((currentWordIndex + 1) / quizSetLength) * 100;
+        progressText.textContent = `${currentWordIndex + 1} / ${quizSetLength}`;
+        progressBar.style.width = `${progress}%`;
+    }
+
+    function showResults() {
+        quizScreen.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+        
+        const quizSetLength = shuffledWords.length;
+        scoreEl.textContent = `${score} / ${quizSetLength}`;
+        incorrectList.innerHTML = '';
+
+        if (incorrectAnswers.length === 0) {
+            incorrectList.innerHTML = `<li class="text-green-600 font-semibold">🎉 완벽해요! 틀린 문제가 없습니다.</li>`;
+        } else {
+            incorrectAnswers.forEach(word => {
+                const definitionsText = word.definitions.map(d => `${d.type}: ${d.text}`).join('<br>');
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="font-bold text-gray-800">${word.word}</span>: ${word.definitions[0].text}`;
+                li.classList.add('text-gray-600');
+                incorrectList.appendChild(li);
+            });
+        }
+    }
+
+    startBtn.addEventListener('click', loadExcelAndShowSetup);
+    createQuizBtn.addEventListener('click', setupQuizAndStart);
+    restartBtn.addEventListener('click', () => {
+        startBtn.disabled = false;
+        startBtn.textContent = '퀴즈 시작하기';
+        resultsScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+    });
+</script>
 </body>
 </html>
