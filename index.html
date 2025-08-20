@@ -125,6 +125,7 @@
         { question: "한글단어", answer: "품사" }
     ];
 
+    // ███████████████████  수정된 부분 1 시작 ███████████████████
     async function loadAndPrepareData() {
         try {
             const response = await fetch('./quiz.xlsx');
@@ -140,15 +141,23 @@
 
             allWordsData = jsonData.map(row => {
                 const rowData = {};
+                let filledCount = 0;
                 columnHeaders.forEach(header => {
-                    rowData[header] = row[header]?.trim();
+                    const value = row[header] ? String(row[header]).trim() : undefined;
+                    if (value) {
+                        rowData[header] = value;
+                        filledCount++;
+                    }
                 });
-                if (Object.values(rowData).some(val => !val)) return null;
-                return rowData;
-            }).filter(Boolean);
+                // 2개 이상의 열이 채워져 있으면 유효한 데이터로 간주
+                if (filledCount >= 2) {
+                    return rowData;
+                }
+                return null;
+            }).filter(Boolean); // null인 (유효하지 않은) 행을 제거
 
             if (allWordsData.length < 4) {
-                throw new Error('퀴즈를 만들기에 유효한 데이터(모든 칸이 채워진 행이 4개 이상)가 부족합니다.');
+                throw new Error('퀴즈를 만들기에 유효한 데이터(최소 2개 이상의 열이 채워진 행이 4개 이상)가 부족합니다.');
             }
             return true;
         } catch (error) {
@@ -159,12 +168,27 @@
     }
 
     function generatePairedQuestion() {
-        // 1. 전체 단어 중 랜덤으로 한 행(row)을 선택
-        const randomRow = allWordsData[Math.floor(Math.random() * allWordsData.length)];
+        let randomRow, availablePairs;
+
+        // 사용 가능한 질문-정답 쌍이 있는 행을 찾을 때까지 반복
+        do {
+            // 1. 전체 데이터 중 랜덤으로 한 행(row)을 선택
+            randomRow = allWordsData[Math.floor(Math.random() * allWordsData.length)];
+            
+            // 2. 선택된 행에서 데이터가 채워진 열(컬럼)들의 목록을 생성
+            const availableColumns = columnHeaders.filter(header => randomRow[header]);
+            
+            // 3. 전체 조합(validPairs) 중에서, 현재 행에서 사용 가능한 조합만 필터링
+            availablePairs = validPairs.filter(pair => 
+                availableColumns.includes(pair.question) && availableColumns.includes(pair.answer)
+            );
+
+        } while (availablePairs.length === 0); // 만약 유효한 조합이 없으면 다른 행을 다시 뽑음
+
+        // 4. 사용 가능한 조합 중 하나를 랜덤으로 선택
+        const randomPair = availablePairs[Math.floor(Math.random() * availablePairs.length)];
         
-        // 2. 정의된 조합(validPairs) 중 하나를 랜덤으로 선택
-        const randomPair = validPairs[Math.floor(Math.random() * validPairs.length)];
-        
+        // 5. 최종 질문 객체 생성
         return {
             question: randomRow[randomPair.question],
             answer: randomRow[randomPair.answer],
@@ -172,6 +196,7 @@
             answerType: randomPair.answer,
         };
     }
+    // ███████████████████  수정된 부분 1 종료 ███████████████████
 
     async function startGame() {
         playerName = nameInput.value.trim();
@@ -224,17 +249,22 @@
     
     function getOptions(currentQuestion) {
         const options = [currentQuestion.answer];
+        // 오답 선택지: 정답과 유형은 같지만 값은 다른 데이터들
         const distractors = allWordsData
             .map(row => row[currentQuestion.answerType])
+            // 값이 존재하고(undefined가 아니고) 정답과 다른 경우만 필터링
             .filter(value => value && value !== currentQuestion.answer);
 
+        // 중복 제거 후 무작위로 섞기
         const shuffledDistractors = [...new Set(distractors)].sort(() => 0.5 - Math.random());
         
+        // 필요한 오답 개수(최대 3개)만큼 선택
         const requiredOptions = Math.min(3, shuffledDistractors.length);
         for (let i = 0; i < requiredOptions; i++) {
             options.push(shuffledDistractors[i]);
         }
         
+        // 정답 포함 최종 선택지들을 다시 무작위로 섞기
         return [...options].sort(() => 0.5 - Math.random());
     }
 
@@ -248,55 +278,4 @@
             button.classList.add('incorrect');
             incorrectAnswers.push(currentQuestion);
             const correctButton = Array.from(optionsContainer.children).find(btn => btn.textContent === currentQuestion.answer);
-            if (correctButton) correctButton.classList.add('correct');
-        }
-
-        setTimeout(() => {
-            currentQuestionIndex++;
-            displayNextQuestion();
-        }, 1500);
-    }
-    
-    function updateProgress() {
-        const progress = ((currentQuestionIndex + 1) / quizLength) * 100;
-        progressText.textContent = `${currentQuestionIndex + 1} / ${quizLength}`;
-        progressBar.style.width = `${progress}%`;
-    }
-
-    function showResults() {
-        quizScreen.classList.add('hidden');
-        resultsScreen.classList.remove('hidden');
-        
-        resultName.textContent = playerName;
-        scoreText.textContent = `${score} / ${quizLength}`;
-        
-        const now = new Date();
-        const timeString = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${now.getHours()}시 ${now.getMinutes()}분`;
-        resultTime.textContent = `퀴즈 완료 시간: ${timeString}`;
-
-        incorrectList.innerHTML = '';
-        if (incorrectAnswers.length === 0) {
-            incorrectList.innerHTML = `<li class="text-green-600 font-semibold">완벽해요! 틀린 문제가 없습니다.</li>`;
-        } else {
-            incorrectAnswers.forEach(q => {
-                const li = document.createElement('li');
-                li.innerHTML = `<b>질문 (${q.questionType}):</b> ${q.question} <br> <b>정답 (${q.answerType}):</b> <span class="font-bold text-green-700">${q.answer}</span>`;
-                li.classList.add('text-gray-600', 'text-sm', 'p-2', 'bg-gray-50', 'rounded-md');
-                incorrectList.appendChild(li);
-            });
-        }
-    }
-
-    function resetGame() {
-        resultsScreen.classList.add('hidden');
-        startScreen.classList.remove('hidden');
-        nameInput.value = '';
-        startBtn.disabled = false;
-        startBtn.textContent = '퀴즈 시작!';
-    }
-
-    startBtn.addEventListener('click', startGame);
-    restartBtn.addEventListener('click', resetGame);
-</script>
-</body>
-</html>
+            if (correctButton) correctButton.classList
