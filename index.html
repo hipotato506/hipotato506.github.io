@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>대화형 어휘 퀴즈</title>
+    <title>엑셀 연동 어휘 퀴즈</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Calm Beige & Sage -->
-    <!-- Application Structure Plan: A single-page application structured as an interactive quiz. The flow is designed for active learning: Start Screen -> Quiz Screen (with progress bar, question, multiple-choice answers, and immediate feedback) -> Results Screen (showing score, incorrect answers for review, and a restart option). This structure was chosen because a gamified quiz format is more engaging and effective for vocabulary memorization than a static list. It encourages active recall and reinforces learning through repetition and immediate feedback. -->
-    <!-- Visualization & Content Choices: Report Info (Vocabulary Lists) -> Goal (Test user's knowledge) -> Presentation (Multiple-choice quiz) -> Interaction (Clicking answer buttons with visual feedback - green for correct, red for incorrect). Justification: This classic quiz format is intuitive and highly effective for testing vocabulary. It actively engages the user and provides clear, immediate learning reinforcement. The app logic is handled entirely by vanilla JavaScript, managing the quiz state, question generation, and UI updates. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
         body {
             font-family: 'Noto Sans KR', sans-serif;
@@ -30,6 +29,10 @@
         }
         .btn-primary:hover {
             background-color: #556B2F; /* Darker Sage */
+        }
+        .btn-primary:disabled {
+            background-color: #909d7a;
+            cursor: not-allowed;
         }
         .btn-option {
             background-color: #F0EAD6; /* Light Beige */
@@ -60,16 +63,14 @@
 
     <div id="app-container" class="w-full max-w-2xl mx-auto">
 
-        <!-- Start Screen -->
         <div id="start-screen" class="text-center p-8 quiz-card">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">어휘력 퀴즈 챌린지</h1>
-            <p class="text-lg text-gray-600 mb-8">학습한 단어들을 퀴즈로 확인해 보세요. 준비가 되면 시작 버튼을 눌러주세요!</p>
+            <p class="text-lg text-gray-600 mb-8">엑셀 파일의 단어들을 퀴즈로 확인해 보세요. 준비가 되면 시작 버튼을 눌러주세요!</p>
             <button id="start-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">
                 퀴즈 시작하기
             </button>
         </div>
 
-        <!-- Quiz Screen -->
         <div id="quiz-screen" class="hidden">
             <div class="p-6 sm:p-8 quiz-card">
                 <div class="flex justify-between items-center mb-4">
@@ -86,12 +87,10 @@
                 </div>
 
                 <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Options will be dynamically inserted here -->
-                </div>
+                    </div>
             </div>
         </div>
 
-        <!-- Results Screen -->
         <div id="results-screen" class="hidden text-center p-8 quiz-card">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">퀴즈 결과</h1>
             <p class="text-2xl text-gray-600 mb-6">총 <span id="score" class="font-bold text-[#6B8E23]">0</span>점을 획득했습니다!</p>
@@ -99,57 +98,16 @@
             <div id="incorrect-answers-container" class="text-left mb-8">
                 <h3 class="text-xl font-semibold text-gray-700 border-b-2 pb-2 mb-4">다시 학습해 보세요!</h3>
                 <ul id="incorrect-list" class="space-y-3">
-                    <!-- Incorrect answers will be listed here -->
-                </ul>
+                    </ul>
             </div>
 
             <button id="restart-btn" class="w-full md:w-1/2 py-4 px-6 text-xl font-bold rounded-lg btn-primary">
                 다시 풀어보기
             </button>
         </div>
-
     </div>
 
     <script>
-        const words = [
-            { word: 'crew', definition: 'a group of people who work on and operate a ship, aircraft, etc.', meaning: '승무원, 팀' },
-            { word: 'tool', definition: 'a single item that you use to make or do something', meaning: '도구' },
-            { word: 'experiment', definition: 'a scientific test you do to find out about something', meaning: '실험' },
-            { word: 'whale', definition: 'a very large animal that lives in the ocean', meaning: '고래' },
-            { word: 'pattern', definition: 'a set of lines, shapes, or colors that are repeated regularly', meaning: '무늬, 패턴' },
-            { word: 'announcement', definition: 'something important that is said to the public', meaning: '발표, 공지' },
-            { word: 'imagine', definition: 'to use your mind to think of something', meaning: '상상하다' },
-            { word: 'photograph', definition: 'a picture you take using a camera', meaning: '사진' },
-            { word: 'floss', definition: 'a special thin thread used to clean between your teeth', meaning: '치실' },
-            { word: 'octopus', definition: 'an ocean animal with a soft, round body and eight arms', meaning: '문어' },
-            { word: 'hide', definition: 'to put something where people cannot see it, or find it', meaning: '숨기다' },
-            { word: 'surprise', definition: 'to make someone have a feeling of surprise', meaning: '놀라게 하다' },
-            { word: 'fable', definition: 'a story that teaches us something', meaning: '우화' },
-            { word: 'solve', definition: 'to find a successful way to deal with a problem', meaning: '해결하다' },
-            { word: 'level', definition: 'the height of something in relation to the ground or to another thing', meaning: '수준, 높이' },
-            { word: 'male', definition: 'belonging to the sex that cannot have babies or eggs', meaning: '남성(의)' },
-            { word: 'record', definition: 'to write down information or store it on a computer', meaning: '기록하다' },
-            { word: 'parrot', definition: 'a bird with colored feathers and a curved beak', meaning: '앵무새' },
-            { word: 'traditional', definition: 'being part of something that people have done for a long time', meaning: '전통적인' },
-            { word: 'symbol', definition: 'an object that represents something', meaning: '상징, 기호' },
-            { word: 'separation', definition: 'the act of moving two things or people apart', meaning: '분리, 이별' },
-            { word: 'victory', definition: 'success in defeating an opponent', meaning: '승리' },
-            { word: 'bow', definition: 'to lower your head or bend your body', meaning: '절하다, 허리를 굽히다' },
-            { word: 'pillow', definition: 'a soft thing to put your head on while you sleep', meaning: '베개' },
-            { word: 'remind', definition: 'to make someone remember something', meaning: '상기시키다, 생각나게 하다' },
-            { word: 'darkness', definition: 'no light', meaning: '어둠, 암흑' },
-            { word: 'scary', definition: 'making people feel afraid, frightening', meaning: '무서운' },
-            { word: 'greet', definition: 'to say hello or welcome', meaning: '인사하다, 맞이하다' },
-            { word: 'watch over', definition: 'to take care of someone or something', meaning: '돌보다, 지키다' },
-            { word: 'valuable', definition: 'very important or expensive', meaning: '귀중한, 값비싼' },
-            { word: 'rooster', definition: 'a male chicken', meaning: '수탉' },
-            { word: 'crow', definition: 'to make the loud sound that a rooster makes', meaning: '(닭이) 울다' },
-            { word: 'evil', definition: 'morally bad or wicked', meaning: '사악한, 악' },
-            { word: 'protect', definition: 'to keep something or someone safe from danger', meaning: '보호하다, 지키다' },
-            { word: 'represent', definition: 'to stand for something else', meaning: '나타내다, 상징하다' },
-            { word: 'last', definition: 'to keep happening for a certain amount of time', meaning: '지속되다' }
-        ];
-
         const startScreen = document.getElementById('start-screen');
         const quizScreen = document.getElementById('quiz-screen');
         const resultsScreen = document.getElementById('results-screen');
@@ -164,19 +122,65 @@
         const scoreEl = document.getElementById('score');
         const incorrectList = document.getElementById('incorrect-list');
 
+        let allWords = []; // 엑셀에서 불러온 모든 단어를 저장할 배열
         let shuffledWords, currentWordIndex, score, incorrectAnswers;
         const QUIZ_LENGTH = 10;
+
+        // 2. 엑셀 파일을 로드하고 파싱하는 함수
+        async function loadQuizData() {
+            try {
+                // './quiz.xlsx'는 이 HTML 파일과 동일한 위치에 파일이 있다는 의미입니다.
+                // 만약 /data/quiz.xlsx 처럼 다른 폴더에 있다면 경로를 수정해주세요.
+                const response = await fetch('./quiz.xlsx');
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer);
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                // 컬럼 이름이 유동적일 수 있으므로, 첫 번째 데이터의 키(key)들을 기반으로 매핑합니다.
+                if (jsonData.length === 0) {
+                    throw new Error('엑셀 파일에 데이터가 없습니다.');
+                }
+                const headers = Object.keys(jsonData[0]); // ["단어 (Word)", "영영풀이...", "뜻..."]
+                
+                // 데이터 형식을 { word, definition, meaning } 으로 통일합니다.
+                allWords = jsonData.map(row => ({
+                    word: row[headers[0]],       // 첫 번째 열을 단어로 가정
+                    definition: row[headers[2]], // 세 번째 열을 영영풀이로 가정
+                    meaning: row[headers[3]]     // 네 번째 열을 한글 뜻으로 가정
+                }));
+
+                return true; // 성공적으로 로드됨
+            } catch (error) {
+                console.error('퀴즈 데이터를 불러오는 데 실패했습니다:', error);
+                alert('quiz.xlsx 파일을 불러올 수 없습니다. 파일이 올바른 위치에 있는지 확인해주세요.');
+                return false; // 로드 실패
+            }
+        }
 
         function shuffleArray(array) {
             return array.sort(() => Math.random() - 0.5);
         }
 
-        function startGame() {
+        async function startGame() {
+            startBtn.disabled = true;
+            startBtn.textContent = '데이터 로딩 중...';
+            
+            const isDataLoaded = await loadQuizData();
+            if (!isDataLoaded) {
+                startBtn.disabled = false;
+                startBtn.textContent = '퀴즈 시작하기';
+                return; // 데이터 로드 실패 시 게임 시작 안함
+            }
+
             startScreen.classList.add('hidden');
             resultsScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
 
-            shuffledWords = shuffleArray([...words]).slice(0, QUIZ_LENGTH);
+            // 퀴즈 단어 수가 10개 미만일 경우를 대비
+            const quizSetLength = Math.min(QUIZ_LENGTH, allWords.length);
+            shuffledWords = shuffleArray([...allWords]).slice(0, quizSetLength);
             currentWordIndex = 0;
             score = 0;
             incorrectAnswers = [];
@@ -185,13 +189,14 @@
         }
 
         function displayNextQuestion() {
-            if (currentWordIndex < QUIZ_LENGTH) {
+            const quizSetLength = shuffledWords.length;
+            if (currentWordIndex < quizSetLength) {
                 updateProgress();
                 const currentWord = shuffledWords[currentWordIndex];
                 
-                // Randomly choose between definition and Korean meaning for the question
-                const isDefinitionQuestion = Math.random() > 0.5;
-                questionEl.textContent = isDefinitionQuestion ? currentWord.definition : currentWord.meaning;
+                // 질문이 될 내용(영영풀이, 한글뜻)이 비어있지 않은지 확인
+                const questionText = currentWord.definition || currentWord.meaning;
+                questionEl.textContent = questionText || "정의 없음"; // 둘 다 비어있을 경우 대비
 
                 const options = getOptions(currentWord);
                 optionsContainer.innerHTML = '';
@@ -210,10 +215,12 @@
         
         function getOptions(correctWord) {
             const options = [{ word: correctWord.word, correct: true }];
-            const distractors = words.filter(w => w.word !== correctWord.word);
+            const distractors = allWords.filter(w => w.word !== correctWord.word);
             const shuffledDistractors = shuffleArray(distractors);
 
-            for (let i = 0; i < 3; i++) {
+            // 보기 3개를 추가. 전체 단어 수가 4개 미만일 경우를 대비
+            const count = Math.min(3, shuffledDistractors.length);
+            for (let i = 0; i < count; i++) {
                 options.push({ word: shuffledDistractors[i].word, correct: false });
             }
             
@@ -231,7 +238,6 @@
             } else {
                 button.classList.add('incorrect');
                 incorrectAnswers.push(shuffledWords[currentWordIndex]);
-                // Also highlight the correct answer
                 const correctButton = Array.from(optionsContainer.children).find(btn => {
                     const correctWord = shuffledWords[currentWordIndex].word;
                     return btn.textContent === correctWord;
@@ -248,16 +254,18 @@
         }
         
         function updateProgress() {
-            const progress = ((currentWordIndex + 1) / QUIZ_LENGTH) * 100;
-            progressText.textContent = `${currentWordIndex + 1} / ${QUIZ_LENGTH}`;
+            const quizSetLength = shuffledWords.length;
+            const progress = ((currentWordIndex + 1) / quizSetLength) * 100;
+            progressText.textContent = `${currentWordIndex + 1} / ${quizSetLength}`;
             progressBar.style.width = `${progress}%`;
         }
 
         function showResults() {
             quizScreen.classList.add('hidden');
             resultsScreen.classList.remove('hidden');
-
-            scoreEl.textContent = `${score} / ${QUIZ_LENGTH}`;
+            
+            const quizSetLength = shuffledWords.length;
+            scoreEl.textContent = `${score} / ${quizSetLength}`;
             incorrectList.innerHTML = '';
 
             if (incorrectAnswers.length === 0) {
@@ -268,7 +276,7 @@
             } else {
                 incorrectAnswers.forEach(word => {
                     const li = document.createElement('li');
-                    li.innerHTML = `<span class="font-bold text-gray-800">${word.word}</span>: ${word.meaning} (${word.definition})`;
+                    li.innerHTML = `<span class="font-bold text-gray-800">${word.word}</span>: ${word.meaning || word.definition}`;
                     li.classList.add('text-gray-600');
                     incorrectList.appendChild(li);
                 });
@@ -276,7 +284,13 @@
         }
 
         startBtn.addEventListener('click', startGame);
-        restartBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => {
+             // Reset start button state for next game
+            startBtn.disabled = false;
+            startBtn.textContent = '퀴즈 시작하기';
+            resultsScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
 
     </script>
 </body>
